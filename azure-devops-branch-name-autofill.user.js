@@ -21,6 +21,7 @@
 
   const DEBUG = true;
 
+  /** @param {any[]} args */
   function log(...args) {
     if (DEBUG) console.log("[BranchAutofill]", ...args);
   }
@@ -103,7 +104,7 @@
       return null;
     }
 
-    const text = link.textContent.trim();
+    const text = (link.textContent || "").trim();
     log("Work item link text:", text);
 
     // Format: "Type 12345: Some title here"
@@ -126,10 +127,9 @@
    */
   function setInputValue(input, value) {
     // Use the native setter to bypass React's synthetic event system
-    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-      HTMLInputElement.prototype,
-      "value"
-    ).set;
+    const nativeInputValueSetter = /** @type {Function} */ (
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set
+    );
     nativeInputValueSetter.call(input, value);
 
     // Dispatch events that React / Azure DevOps BOLT UI listens for
@@ -215,7 +215,9 @@
   function handleBranchDialog(dialog) {
     log("handleBranchDialog called");
 
-    const branchInput = dialog.querySelector("input.item-name-input");
+    const branchInput = /** @type {HTMLInputElement | null} */ (
+      dialog.querySelector("input.item-name-input")
+    );
     if (!branchInput) {
       log("No input.item-name-input found in dialog");
       return;
