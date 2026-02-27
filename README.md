@@ -17,7 +17,7 @@ feature/1234-Title-In-Dash-Separated-Pascal-Case
    - [Greasemonkey](https://www.greasespot.net/) (Firefox)
    - [Violentmonkey](https://violentmonkey.github.io/) (Chrome, Firefox, Edge)
 2. Click
-   [**Install azure-devops-branch-name-autofill.user.js**](https://raw.githubusercontent.com/jamiegluk/azure-devops-branch-name-autofill/main/azure-devops-branch-name-autofill.user.js)
+   [**Install azure-devops-branch-name-autofill.user.js**](https://raw.githubusercontent.com/jamiegluk/azure-devops-branch-name-autofill/master/azure-devops-branch-name-autofill.user.js)
    — your userscript manager will prompt you to install it.
 3. Navigate to Azure DevOps and open a "New branch…" dialog from any work item.
 
