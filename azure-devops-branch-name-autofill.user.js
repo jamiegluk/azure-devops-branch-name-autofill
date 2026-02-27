@@ -16,6 +16,18 @@
   "use strict";
 
   // ──────────────────────────────────────────────
+  //  Debug logging — set to false to silence
+  // ──────────────────────────────────────────────
+
+  const DEBUG = true;
+
+  function log(...args) {
+    if (DEBUG) console.log("[BranchAutofill]", ...args);
+  }
+
+  log("Script loaded on", window.location.href);
+
+  // ──────────────────────────────────────────────
   //  Configuration — edit these to taste
   // ──────────────────────────────────────────────
 
@@ -73,19 +85,34 @@
     const extensionsRegion = dialog.querySelector(
       '.region-createBranchDialogExtensions'
     );
-    if (!extensionsRegion) return null;
+    if (!extensionsRegion) {
+      log("No .region-createBranchDialogExtensions found in dialog");
+      log("Dialog innerHTML preview:", dialog.innerHTML.substring(0, 500));
+      return null;
+    }
+    log("Found extensions region");
 
     // Look for the first work-item link in the linked-items table
     const link = extensionsRegion.querySelector(
       'a[href*="_workitems/edit/"]'
     );
-    if (!link) return null;
+    if (!link) {
+      log("No work-item link found in extensions region");
+      log("Extensions region innerHTML:", extensionsRegion.innerHTML.substring(0, 500));
+      return null;
+    }
 
     const text = link.textContent.trim();
+    log("Work item link text:", text);
+
     // Format: "Type 12345: Some title here"
     const match = text.match(/^\w+\s+(\d+):\s*(.+)$/);
-    if (!match) return null;
+    if (!match) {
+      log("Link text did not match expected pattern");
+      return null;
+    }
 
+    log("Parsed work item — ID:", match[1], "Title:", match[2].trim());
     return { id: match[1], title: match[2].trim() };
   }
 
@@ -115,21 +142,35 @@
    * @param {Element} dialog - The dialog root element.
    */
   function handleBranchDialog(dialog) {
+    log("handleBranchDialog called, dialog:", dialog);
+
     const branchInput = dialog.querySelector("input.item-name-input");
-    if (!branchInput) return;
+    if (!branchInput) {
+      log("No input.item-name-input found in dialog");
+      return;
+    }
+    log("Found branch input, current value:", JSON.stringify(branchInput.value));
 
     // Only autofill if the field is empty (don't overwrite user input)
-    if (branchInput.value.trim() !== "") return;
+    if (branchInput.value.trim() !== "") {
+      log("Input already has a value, skipping autofill");
+      return;
+    }
 
     const workItem = getWorkItemFromDialog(dialog);
-    if (!workItem) return;
+    if (!workItem) {
+      log("Could not extract work item from dialog");
+      return;
+    }
 
     const branchName = buildBranchName(workItem.id, workItem.title);
+    log("Setting branch name to:", branchName);
     setInputValue(branchInput, branchName);
 
     // Focus the input so the user can see and tweak the value
     branchInput.focus();
     branchInput.select();
+    log("Autofill complete");
   }
 
   // ──────────────────────────────────────────────
@@ -150,8 +191,11 @@
 
         if (!dialogHeading) continue;
 
+        log("Detected 'Create a branch' dialog heading");
+
         // Walk up to the dialog root
         const dialog = dialogHeading.closest('[role="dialog"]') || node;
+        log("Dialog root element:", dialog.tagName, dialog.className);
 
         // The linked work items may render slightly after the dialog shell,
         // so wait a tick before reading them.
@@ -161,4 +205,5 @@
   });
 
   observer.observe(document.body, { childList: true, subtree: true });
+  log("MutationObserver attached to document.body");
 })();
