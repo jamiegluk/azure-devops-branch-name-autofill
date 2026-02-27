@@ -15,3 +15,6 @@ Desktop.ini
 
 # Local History (VS Code extension)
 .history/
+
+# Claude Code local settings
+.claude/
