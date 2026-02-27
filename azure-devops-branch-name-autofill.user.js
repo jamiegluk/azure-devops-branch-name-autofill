@@ -137,29 +137,15 @@
   }
 
   /**
-   * Handle a newly appeared "Create a branch" dialog.
+   * Fill the branch name input once we have the work item info.
    *
-   * @param {Element} dialog - The dialog root element.
+   * @param {HTMLInputElement} branchInput - The branch-name input element.
+   * @param {{ id: string, title: string }} workItem - The parsed work item.
    */
-  function handleBranchDialog(dialog) {
-    log("handleBranchDialog called, dialog:", dialog);
-
-    const branchInput = dialog.querySelector("input.item-name-input");
-    if (!branchInput) {
-      log("No input.item-name-input found in dialog");
-      return;
-    }
-    log("Found branch input, current value:", JSON.stringify(branchInput.value));
-
-    // Only autofill if the field is empty (don't overwrite user input)
+  function fillBranchName(branchInput, workItem) {
+    // Only autofill if the field is still empty (don't overwrite user input)
     if (branchInput.value.trim() !== "") {
       log("Input already has a value, skipping autofill");
-      return;
-    }
-
-    const workItem = getWorkItemFromDialog(dialog);
-    if (!workItem) {
-      log("Could not extract work item from dialog");
       return;
     }
 
@@ -171,6 +157,84 @@
     branchInput.focus();
     branchInput.select();
     log("Autofill complete");
+  }
+
+  /**
+   * Wait for the work-item link to appear inside the extensions region,
+   * then autofill the branch name. Uses a MutationObserver so we don't
+   * rely on a fixed timeout — the linked work items load asynchronously.
+   *
+   * @param {Element} dialog - The dialog root element.
+   * @param {HTMLInputElement} branchInput - The branch-name input element.
+   * @param {Element} extensionsRegion - The extensions region element.
+   */
+  function waitForWorkItem(dialog, branchInput, extensionsRegion) {
+    // Check if the link is already present (e.g. fast load / cached)
+    const workItem = getWorkItemFromDialog(dialog);
+    if (workItem) {
+      fillBranchName(branchInput, workItem);
+      return;
+    }
+
+    log("Work item link not yet loaded, watching for changes...");
+
+    const TIMEOUT_MS = 10000;
+    let settled = false;
+
+    const workItemObserver = new MutationObserver(() => {
+      if (settled) return;
+      const wi = getWorkItemFromDialog(dialog);
+      if (wi) {
+        settled = true;
+        workItemObserver.disconnect();
+        fillBranchName(branchInput, wi);
+      }
+    });
+
+    workItemObserver.observe(extensionsRegion, {
+      childList: true,
+      subtree: true,
+    });
+
+    // Safety timeout — stop watching after a while
+    setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        workItemObserver.disconnect();
+        log("Timed out waiting for work item link to load");
+      }
+    }, TIMEOUT_MS);
+  }
+
+  /**
+   * Handle a newly appeared "Create a branch" dialog.
+   *
+   * @param {Element} dialog - The dialog root element.
+   */
+  function handleBranchDialog(dialog) {
+    log("handleBranchDialog called");
+
+    const branchInput = dialog.querySelector("input.item-name-input");
+    if (!branchInput) {
+      log("No input.item-name-input found in dialog");
+      return;
+    }
+    log("Found branch input, current value:", JSON.stringify(branchInput.value));
+
+    if (branchInput.value.trim() !== "") {
+      log("Input already has a value, skipping autofill");
+      return;
+    }
+
+    const extensionsRegion = dialog.querySelector(
+      '.region-createBranchDialogExtensions'
+    );
+    if (!extensionsRegion) {
+      log("No .region-createBranchDialogExtensions found in dialog");
+      return;
+    }
+
+    waitForWorkItem(dialog, branchInput, extensionsRegion);
   }
 
   // ──────────────────────────────────────────────
@@ -197,9 +261,8 @@
         const dialog = dialogHeading.closest('[role="dialog"]') || node;
         log("Dialog root element:", dialog.tagName, dialog.className);
 
-        // The linked work items may render slightly after the dialog shell,
-        // so wait a tick before reading them.
-        setTimeout(() => handleBranchDialog(dialog), 300);
+        // Small delay to let the dialog shell render its children
+        setTimeout(() => handleBranchDialog(dialog), 100);
       }
     }
   });
