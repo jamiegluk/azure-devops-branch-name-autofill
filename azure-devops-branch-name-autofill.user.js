@@ -10,6 +10,8 @@
 // @grant       none
 // @homepageURL https://github.com/jamiegluk/azure-devops-branch-name-autofill
 // @supportURL  https://github.com/jamiegluk/azure-devops-branch-name-autofill/issues
+// @updateURL   https://raw.githubusercontent.com/jamiegluk/azure-devops-branch-name-autofill/master/azure-devops-branch-name-autofill.user.js
+// @downloadURL https://raw.githubusercontent.com/jamiegluk/azure-devops-branch-name-autofill/master/azure-devops-branch-name-autofill.user.js
 // ==/UserScript==
 
 (function () {
