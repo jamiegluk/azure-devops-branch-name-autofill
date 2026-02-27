@@ -47,7 +47,8 @@
    */
   function formatTitle(title) {
     return title
-      .replace(/[^a-zA-Z0-9\s-]/g, "") // strip special characters
+      .replace(/[/\\|:;_~+&,>]+/g, " ") // treat punctuation as word separators
+      .replace(/[^a-zA-Z0-9\s-]/g, "") // strip remaining special characters
       .replace(/\s+/g, " ") // collapse whitespace
       .trim()
       .split(/[\s-]+/) // split on spaces or hyphens
