@@ -138,6 +138,93 @@
   }
 
   /**
+   * Add a "Copy to clipboard" button next to the branch name input,
+   * matching the native Azure DevOps bolt-clipboard-button style.
+   *
+   * @param {HTMLInputElement} branchInput - The branch-name input element.
+   */
+  function addCopyButton(branchInput) {
+    // Don't add twice
+    const container = branchInput.closest(".flex-column");
+    if (!container || container.querySelector(".bolt-clipboard-button")) return;
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "bolt-clipboard-button";
+    wrapper.style.cssText =
+      "position:absolute;top:50%;transform:translateY(-50%);display:none;";
+
+    const btn = document.createElement("button");
+    btn.setAttribute("aria-label", "Copy to clipboard");
+    btn.className =
+      "bolt-button bolt-icon-button enabled icon-only bolt-focus-treatment";
+    btn.type = "button";
+    btn.title = "Copy to clipboard";
+
+    const iconOuter = document.createElement("span");
+    iconOuter.className = "fluent-icons-enabled";
+    const iconInner = document.createElement("span");
+    iconInner.setAttribute("aria-hidden", "true");
+    iconInner.className =
+      "left-icon flex-noshrink fabric-icon ms-Icon--Copy medium";
+    iconOuter.appendChild(iconInner);
+    btn.appendChild(iconOuter);
+    wrapper.appendChild(btn);
+
+    // Place inside the .bolt-textfield, absolute-positioned to the right.
+    // Dynamically offset to avoid overlapping any suffix icon (e.g. error).
+    const textfieldDiv = branchInput.closest(".bolt-textfield");
+    if (textfieldDiv) {
+      /** @type {HTMLElement} */ (textfieldDiv).style.position = "relative";
+      textfieldDiv.appendChild(wrapper);
+
+      /** Position the button and pad the input to avoid text overlap. */
+      const btnSpace = 32; // copy button width + small gap
+      // Capture the original padding before we modify it
+      const originalPadding =
+        parseFloat(getComputedStyle(branchInput).paddingRight) || 0;
+      const updatePosition = () => {
+        const suffix = textfieldDiv.querySelector(".suffix.bolt-textfield-icon");
+        // suffix takes: padding-right 4px + margin-right 7px + 1rem icon ≈ 27px
+        const suffixWidth = suffix ? 27 : 0;
+        wrapper.style.right = (suffixWidth + 4) + "px";
+        branchInput.style.paddingRight = (originalPadding + btnSpace) + "px";
+      };
+      updatePosition();
+
+      // Re-check position when the error icon may appear/disappear
+      const posObserver = new MutationObserver(updatePosition);
+      posObserver.observe(textfieldDiv, { childList: true, subtree: true });
+
+      // Show on hover / focus, hide on leave
+      const show = () => { wrapper.style.display = ""; };
+      const hide = () => { wrapper.style.display = "none"; };
+      textfieldDiv.addEventListener("mouseenter", show);
+      textfieldDiv.addEventListener("mouseleave", hide);
+      branchInput.addEventListener("focus", show);
+      branchInput.addEventListener("blur", () => {
+        // Small delay so click on button still registers
+        setTimeout(hide, 200);
+      });
+    }
+
+    btn.addEventListener("click", () => {
+      const value = branchInput.value;
+      navigator.clipboard.writeText(value).then(() => {
+        log("Copied to clipboard:", value);
+        // Brief visual feedback — swap icon to a checkmark
+        iconInner.className =
+          "left-icon flex-noshrink fabric-icon ms-Icon--CheckMark medium";
+        setTimeout(() => {
+          iconInner.className =
+            "left-icon flex-noshrink fabric-icon ms-Icon--Copy medium";
+        }, 1500);
+      });
+    });
+
+    log("Copy button added");
+  }
+
+  /**
    * Fill the branch name input once we have the work item info.
    *
    * @param {HTMLInputElement} branchInput - The branch-name input element.
@@ -153,6 +240,9 @@
     const branchName = buildBranchName(workItem.id, workItem.title);
     log("Setting branch name to:", branchName);
     setInputValue(branchInput, branchName);
+
+    // Add a copy button next to the input
+    addCopyButton(branchInput);
 
     // Focus the input so the user can see and tweak the value
     branchInput.focus();

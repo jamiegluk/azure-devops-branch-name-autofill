@@ -30,6 +30,8 @@ appearing in the DOM. When detected, it:
 2. Formats the title into Dash-Separated-Pascal-Case.
 3. Builds a branch name: `feature/{id}-{Formatted-Title}`.
 4. Sets the branch name input value and selects it for easy editing.
+5. Adds a **"Copy to clipboard"** button to the name field (appears on hover),
+   matching the native Azure DevOps style.
 
 ## Customisation
 
